@@ -4,6 +4,10 @@ interface Props {
   mode: "login" | "signup";
 }
 
+import Button from "./ui/Button";
+import InputField from "./ui/InputField";
+import Card from "./ui/Card";
+
 export default function AuthForm({ mode }: Props) {
   const navigate = useNavigate();
 
