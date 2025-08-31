@@ -1,25 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, AlertTriangle } from "lucide-react";
-import { sendMessageToAI } from "@/lib/api-mock";
+import { sendMessageToAI, fetchChatHistory } from "@/lib/api-mock";
+import Spinner from "./Spinner";
 
 interface Msg { id: string; role: "user" | "ai"; text: string; ts: number }
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Msg[]>([
-    { id: "w1", role: "ai", text: "Hi Aanya, I'm here for you. What's on your mind today?", ts: Date.now() },
-  ]);
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [showCrisis, setShowCrisis] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    (async()=>{
+      setInitialLoading(true);
+      const hist = await fetchChatHistory();
+      setMessages(hist as any);
+      setInitialLoading(false);
+    })();
+  }, []);
+
+  useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages.length]);
+  }, [messages.length, initialLoading]);
 
   const onSend = async () => {
     const text = input.trim();
     if (!text) return;
+    if(text.toLowerCase().includes("/crisis")) { setShowCrisis(true); setInput(""); return; }
     const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text, ts: Date.now() };
     setMessages((m) => [...m, userMsg]);
     setInput("");
@@ -32,19 +42,25 @@ export default function Chat() {
   return (
     <div className="grid grid-rows-[1fr_auto] h-[calc(100vh-120px)] border rounded-xl bg-white">
       <div ref={listRef} className="overflow-y-auto p-4 space-y-3">
-        {messages.map((m) => (
-          <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm shadow ${m.role === "user" ? "bg-sky-200" : "bg-gray-200"}`}>
-              <p className="whitespace-pre-wrap">{m.text}</p>
-              <p className="text-[10px] text-gray-600 mt-1">{new Date(m.ts).toLocaleTimeString()}</p>
-            </div>
-          </div>
-        ))}
-        {loading && <p className="text-sm text-foreground/60">Sahara is typing…</p>}
+        {initialLoading ? (
+          <div className="grid place-items-center h-40"><Spinner size={28}/></div>
+        ) : (
+          <>
+            {messages.map((m) => (
+              <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm shadow ${m.role === "user" ? "bg-sky-200" : "bg-gray-200"}`}>
+                  <p className="whitespace-pre-wrap">{m.text}</p>
+                  <p className="text-[10px] text-gray-600 mt-1">{new Date(m.ts).toLocaleTimeString()}</p>
+                </div>
+              </div>
+            ))}
+            {loading && <p className="text-sm text-foreground/60">Sahara is typing…</p>}
+          </>
+        )}
       </div>
       <div className="border-t p-3 flex items-center gap-2">
         <button onClick={() => setShowCrisis(true)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm font-medium text-orange-700 bg-orange-100"><AlertTriangle size={16}/> Crisis?</button>
-        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSend()} placeholder="Type a message" className="flex-1 rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"/>
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSend()} placeholder="Type a message (use /crisis for help)" className="flex-1 rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"/>
         <button onClick={onSend} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground shadow"><Send size={16}/> Send</button>
       </div>
       {showCrisis && <CrisisModal onClose={() => setShowCrisis(false)} />}
