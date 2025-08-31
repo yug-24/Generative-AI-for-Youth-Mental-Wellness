@@ -10,6 +10,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import DashboardLayout from "@/components/sahara/DashboardLayout";
 import DashboardHome from "@/pages/dashboard/Index";
 import ChatPage from "@/pages/dashboard/Chat";
